@@ -1,3 +1,4 @@
+from functools import partial
 import spacy
 
 from .constants import POS_tags
@@ -8,6 +9,18 @@ def get_last_open_class_word(sent: spacy.tokens.span.Span) -> str:
     for token in sent:
         if token.pos_ in POS_tags.OPEN_CLASS_WORDS:
             return token.text
+
+def mask_noun_word(
+    word: spacy.tokens.token.Token,
+    mask_token:str, mask_char_by_char:bool=False
+    ) -> str:
+    if word.pos_ in ["NOUN", "PROPN"]:
+        if mask_char_by_char:
+            return mask_token*len(word.text)
+        else:
+            return mask_token
+    else:
+        return word.text
 
 class KotobaPlayer:
     def __init__(self) -> None:
@@ -25,6 +38,20 @@ class KotobaPlayer:
         return f"{parrot_word}! {parrot_word}!"
 
     def masquerade(self, text:str, mask_token:str, mask_char_by_char:bool=False) -> str:
+        """名詞を伏せる
+        """
         if not text:
             raise InputFormatError
-        pass
+
+        mask_word = partial(
+            mask_noun_word,
+            mask_token=mask_token, mask_char_by_char=mask_char_by_char
+        )
+        doc = self.nlp(text)
+        if isinstance(doc[-1], spacy.tokens.token.Token):
+            return "".join(map(mask_word, doc))
+        else:
+            return "".join((
+                "".join(map(mask_word, sent))
+                for sent in doc
+            ))
