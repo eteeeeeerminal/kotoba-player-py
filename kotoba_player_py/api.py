@@ -48,10 +48,6 @@ class KotobaPlayer:
             mask_token=mask_token, mask_char_by_char=mask_char_by_char
         )
         doc = self.nlp(text)
-        if isinstance(doc[-1], spacy.tokens.token.Token):
-            return "".join(map(mask_word, doc))
-        else:
-            return "".join((
-                "".join(map(mask_word, sent))
-                for sent in doc
-            ))
+        return "".join(
+            ("".join(map(mask_word, sent)) for sent in doc.sents)
+            )
